@@ -10,27 +10,28 @@ import (
 )
 
 type TeamService struct {
-	teamRepo *repositories.TeamRepository
-	userRepo *repositories.UserRepository
+	TeamRepo *repositories.TeamRepository
+	UserRepo *repositories.UserRepository
 }
 
 func NewTeamService(t *repositories.TeamRepository, u *repositories.UserRepository) *TeamService {
 	return &TeamService{
-		teamRepo: t,
-		userRepo: u,
+		TeamRepo: t,
+		UserRepo: u,
 	}
 }
 
 func (s *TeamService) TeamCreate(team *t.Team) (*t.Team, error) {
-	err := s.teamRepo.FindTeamByName(team.TeamName)
+	err := s.TeamRepo.FindTeamByName(team.TeamName)
 	if err != nil {
-		if err.Error() == "team exists" {
-			return nil, errors.TeamExists
+		if err != sql.ErrNoRows {
+			return nil, err
 		}
-		return nil, err
+	} else {
+		return nil, errors.TeamExists
 	}
 	for _, member := range team.Members {
-		_, err := s.userRepo.FindUserById(member.UserId)
+		_, err := s.UserRepo.FindUserById(member.UserId)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				break
@@ -40,21 +41,21 @@ func (s *TeamService) TeamCreate(team *t.Team) (*t.Team, error) {
 			return nil, errors.UserExistsAnotherTeam
 		}
 	}
-	tx, err := s.teamRepo.Store.BeginTx()
+	tx, err := s.TeamRepo.Store.BeginTx()
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
-	if err := s.teamRepo.CreateWithTx(team.TeamName, tx); err != nil {
+	if err := s.TeamRepo.CreateWithTx(team.TeamName, tx); err != nil {
 		return nil, err
 	}
-	if err := s.userRepo.CreateUsersWithTx(team.Members, team.TeamName, tx); err != nil {
+	if err := s.UserRepo.CreateUsersWithTx(team.Members, team.TeamName, tx); err != nil {
 		return nil, err
 	}
 	tx.Commit()
-	return s.teamRepo.FindTeamWithMembersByName(team.TeamName)
+	return s.TeamRepo.FindTeamWithMembersByName(team.TeamName)
 }
 
 func (s *TeamService) TeamGet(teamName string) (*t.Team, error) {
-	return s.teamRepo.FindTeamWithMembersByName(teamName)
+	return s.TeamRepo.FindTeamWithMembersByName(teamName)
 }

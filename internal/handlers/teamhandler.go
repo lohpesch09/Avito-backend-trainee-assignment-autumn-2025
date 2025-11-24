@@ -6,25 +6,20 @@ import (
 
 	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/models/errors"
 	t "github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/models/team"
-	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/repositories"
 	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/services"
-	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/store"
 )
 
 type TeamHandler struct {
-	store *store.Store
+	TeamService *services.TeamService
 }
 
-func NewTeamHandler(s *store.Store) *TeamHandler {
+func NewTeamHandler(teamService *services.TeamService) *TeamHandler {
 	return &TeamHandler{
-		store: s,
+		TeamService: teamService,
 	}
 }
 
 func (h *TeamHandler) TeamCreateHandler(w http.ResponseWriter, r *http.Request) {
-	teamRepo := repositories.NewTeamRepository(h.store)
-	userRepo := repositories.NewUserRepository(h.store)
-	teamService := services.NewTeamService(teamRepo, userRepo)
 	team := &t.Team{}
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(team); err != nil {
@@ -37,7 +32,7 @@ func (h *TeamHandler) TeamCreateHandler(w http.ResponseWriter, r *http.Request) 
 		json.NewEncoder(w).Encode(errors.ErrorResponse{Error: err})
 		return
 	}
-	teamResponse, err := teamService.TeamCreate(team)
+	teamResponse, err := h.TeamService.TeamCreate(team)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(errors.ErrorResponse{Error: err})
@@ -51,10 +46,7 @@ func (h *TeamHandler) TeamCreateHandler(w http.ResponseWriter, r *http.Request) 
 
 func (h *TeamHandler) TeamGetHandler(w http.ResponseWriter, r *http.Request) {
 	teamName := r.URL.Query().Get("team_name")
-	teamRepo := repositories.NewTeamRepository(h.store)
-	userRepo := repositories.NewUserRepository(h.store)
-	teamService := services.NewTeamService(teamRepo, userRepo)
-	team, err := teamService.TeamGet(teamName)
+	team, err := h.TeamService.TeamGet(teamName)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(errors.ErrorResponse{Error: err})

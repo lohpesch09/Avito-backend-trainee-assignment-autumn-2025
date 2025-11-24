@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"database/sql"
-	"errors"
 
 	t "github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/models/team"
 	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/store"
@@ -22,12 +21,9 @@ func (r *TeamRepository) FindTeamByName(teamName string) error {
 	var team string
 	teamQuery := r.Store.DB.QueryRow("SELECT * FROM teams WHERE team_name = $1;", teamName)
 	if err := teamQuery.Scan(&team); err != nil {
-		if err == sql.ErrNoRows {
-			return nil
-		}
 		return err
 	}
-	return errors.New("team exists")
+	return nil
 }
 
 func (r *TeamRepository) CreateWithTx(teamName string, tx *sql.Tx) error {

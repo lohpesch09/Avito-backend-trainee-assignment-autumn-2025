@@ -7,13 +7,11 @@ import (
 
 	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/models/errors"
 	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/models/pullrequest"
-	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/repositories"
 	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/services"
-	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/store"
 )
 
 type PullRequestHandler struct {
-	Store *store.Store
+	PullRequestService *services.PullRequestService
 }
 
 type PullRequestReassign struct {
@@ -21,16 +19,13 @@ type PullRequestReassign struct {
 	OldUserId     string `json:"old_user_id"`
 }
 
-func NewPullRequestHandler(s *store.Store) *PullRequestHandler {
+func NewPullRequestHandler(pullRequestService *services.PullRequestService) *PullRequestHandler {
 	return &PullRequestHandler{
-		Store: s,
+		PullRequestService: pullRequestService,
 	}
 }
 
 func (h *PullRequestHandler) PullRequestCreateHandler(w http.ResponseWriter, r *http.Request) {
-	userRepo := repositories.NewUserRepository(h.Store)
-	pullRequestRepo := repositories.NewPullRequestRepository(h.Store)
-	pullRequestService := services.NewPullRequestService(userRepo, pullRequestRepo)
 	pullRequestShort := &pullrequest.PullRequestShort{}
 	if err := json.NewDecoder(r.Body).Decode(pullRequestShort); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -46,7 +41,7 @@ func (h *PullRequestHandler) PullRequestCreateHandler(w http.ResponseWriter, r *
 	pullRequest := &pullrequest.PullRequest{}
 	pullRequest.PullRequestShort = pullRequestShort
 	pullRequest.CreatedAt = time.Now()
-	pullRequestResponse, err := pullRequestService.PullRequestCreate(pullRequest)
+	pullRequestResponse, err := h.PullRequestService.PullRequestCreate(pullRequest)
 	if err != nil {
 		if err == errors.NotFound {
 			w.WriteHeader(http.StatusNotFound)
@@ -73,16 +68,13 @@ func (h *PullRequestHandler) PullRequestCreateHandler(w http.ResponseWriter, r *
 }
 
 func (h *PullRequestHandler) PullRequestMergeHandler(w http.ResponseWriter, r *http.Request) {
-	userRepo := repositories.NewUserRepository(h.Store)
-	pullRequestRepo := repositories.NewPullRequestRepository(h.Store)
-	pullRequestService := services.NewPullRequestService(userRepo, pullRequestRepo)
 	pullRequestShort := &pullrequest.PullRequestShort{}
 	if err := json.NewDecoder(r.Body).Decode(pullRequestShort); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(errors.ErrorResponse{Error: err})
 		return
 	}
-	pullRequestResponse, err := pullRequestService.PullRequestMerge(pullRequestShort.PullRequestId)
+	pullRequestResponse, err := h.PullRequestService.PullRequestMerge(pullRequestShort.PullRequestId)
 	if err != nil {
 		if err == errors.NotFound {
 			w.WriteHeader(http.StatusNotFound)
@@ -105,16 +97,13 @@ func (h *PullRequestHandler) PullRequestMergeHandler(w http.ResponseWriter, r *h
 }
 
 func (h *PullRequestHandler) PullRequestReassignHandler(w http.ResponseWriter, r *http.Request) {
-	userRepo := repositories.NewUserRepository(h.Store)
-	pullRequestRepo := repositories.NewPullRequestRepository(h.Store)
-	pullRequestService := services.NewPullRequestService(userRepo, pullRequestRepo)
 	pullRequestReassign := &PullRequestReassign{}
 	if err := json.NewDecoder(r.Body).Decode(pullRequestReassign); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(errors.ErrorResponse{Error: err})
 		return
 	}
-	pullRequestResponse, replacedByUserId, err := pullRequestService.PullRequestReassign(pullRequestReassign.PullRequestId,
+	pullRequestResponse, replacedByUserId, err := h.PullRequestService.PullRequestReassign(pullRequestReassign.PullRequestId,
 		pullRequestReassign.OldUserId,
 	)
 	if err != nil {

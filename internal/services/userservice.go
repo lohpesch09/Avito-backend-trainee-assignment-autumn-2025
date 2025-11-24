@@ -10,27 +10,27 @@ import (
 )
 
 type UserService struct {
-	userRepo *repositories.UserRepository
+	UserRepo *repositories.UserRepository
 }
 
 func NewUserService(userRepo *repositories.UserRepository) *UserService {
 	return &UserService{
-		userRepo: userRepo,
+		UserRepo: userRepo,
 	}
 }
 
 func (s *UserService) UserSetIsActive(userId string, isActive bool) (*user.User, error) {
-	_, err := s.userRepo.FindUserById(userId)
+	_, err := s.UserRepo.FindUserById(userId)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.NotFound
 		}
 		return nil, err
 	}
-	if err := s.userRepo.SetIsActive(userId, isActive); err != nil {
+	if err := s.UserRepo.SetIsActive(userId, isActive); err != nil {
 		return nil, err
 	}
-	u, err := s.userRepo.FindUserById(userId)
+	u, err := s.UserRepo.FindUserById(userId)
 	if err != nil {
 		return nil, err
 	}
@@ -38,5 +38,5 @@ func (s *UserService) UserSetIsActive(userId string, isActive bool) (*user.User,
 }
 
 func (s *UserService) GetUserReviews(userId string) ([]*pullrequest.PullRequestShort, error) {
-	return s.userRepo.FindReviewsByUserId(userId)
+	return s.UserRepo.FindReviewsByUserId(userId)
 }

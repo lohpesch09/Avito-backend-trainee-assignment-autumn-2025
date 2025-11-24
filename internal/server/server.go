@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/api"
 	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/config"
 	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/handlers"
 	"github.com/lohpesch09/Avito-backend-trainee-assignment-autumn-2025/internal/store"
@@ -18,14 +19,16 @@ type Server struct {
 	Logger *logrus.Logger
 	Router *mux.Router
 	Store  *store.Store
+	API    *api.API
 }
 
-func NewServer(config *config.Config) *Server {
+func NewServer(config *config.Config, store *store.Store, API *api.API) *Server {
 	return &Server{
 		Config: config,
 		Logger: logrus.New(),
 		Router: mux.NewRouter(),
-		Store:  store.NewStore(),
+		Store:  store,
+		API:    API,
 	}
 }
 
@@ -55,19 +58,14 @@ func (s *Server) configureStore() error {
 }
 
 func (s *Server) configureRouter() {
-
-	teamHandler := handlers.NewTeamHandler(s.Store)
-	userHandler := handlers.NewUserHandler(s.Store)
-	pullRequestHandler := handlers.NewPullRequestHandler(s.Store)
-
 	s.Router.HandleFunc("/health", handlers.HealthHandler).Methods("GET")
-	s.Router.HandleFunc("/team/add", teamHandler.TeamCreateHandler).Methods("POST")
-	s.Router.HandleFunc("/team/get", teamHandler.TeamGetHandler).Methods("GET")
-	s.Router.HandleFunc("/users/setIsActive", userHandler.UserSetIsActiveHandler).Methods("POST")
-	s.Router.HandleFunc("/users/getReview", userHandler.UserGetReviewHandler).Methods("GET")
-	s.Router.HandleFunc("/pullRequest/create", pullRequestHandler.PullRequestCreateHandler).Methods("POST")
-	s.Router.HandleFunc("/pullRequest/merge", pullRequestHandler.PullRequestMergeHandler).Methods("POST")
-	s.Router.HandleFunc("/pullRequest/reassign", pullRequestHandler.PullRequestReassignHandler).Methods("POST")
+	s.Router.HandleFunc("/team/add", s.API.TeamHandler.TeamCreateHandler).Methods("POST")
+	s.Router.HandleFunc("/team/get", s.API.TeamHandler.TeamGetHandler).Methods("GET")
+	s.Router.HandleFunc("/users/setIsActive", s.API.UserHandler.UserSetIsActiveHandler).Methods("POST")
+	s.Router.HandleFunc("/users/getReview", s.API.UserHandler.UserGetReviewHandler).Methods("GET")
+	s.Router.HandleFunc("/pullRequest/create", s.API.PullRequestHandler.PullRequestCreateHandler).Methods("POST")
+	s.Router.HandleFunc("/pullRequest/merge", s.API.PullRequestHandler.PullRequestMergeHandler).Methods("POST")
+	s.Router.HandleFunc("/pullRequest/reassign", s.API.PullRequestHandler.PullRequestReassignHandler).Methods("POST")
 }
 
 func (s *Server) configureLogger() error {
